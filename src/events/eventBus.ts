@@ -68,8 +68,10 @@ export async function publishEvent(topic: string, message: Record<string, any>):
       });
       console.log(`[Kafka Event Published] -> Topic: ${topic}`);
       return payload;
-    } catch (e) {
-      console.error(`Error emitting event to Kafka topic ${topic}:`, e);
+    } catch (e: any) {
+      console.warn(`⚠️ Kafka emission failed for topic ${topic} (${e.message}). Falling back to local EventBus.`);
+      isKafkaConnected = false;
+      producer.disconnect().catch(() => {});
     }
   }
 

@@ -81,7 +81,7 @@ export async function sendEmail(options: EmailOptions) {
     if (isEtherealAccount) {
       const previewUrl = nodemailer.getTestMessageUrl(info);
       if (previewUrl) {
-        console.log(`🔗 [Ethereal Preview URL]: ${previewUrl}`);
+        console.log(`🔗 [Ethereal Email Preview URL]: ${previewUrl}`);
       }
     }
 
@@ -211,6 +211,49 @@ export async function sendPackageDeliveredEmail(to: string, trackingNumber: stri
   return sendEmail({
     to,
     subject: `✅ Package Delivered (${trackingNumber})`,
+    html,
+  });
+}
+
+/**
+ * 5. Low Stock Alert Email (Topic: inventory.updated)
+ */
+export async function sendLowStockAlertEmail(
+  to: string,
+  productName: string,
+  sku: string,
+  warehouseName: string,
+  currentStock: number,
+  reorderLevel: number
+) {
+  const html = `
+    <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e1e4e8;">
+        <div style="background: #dc2626; color: #ffffff; padding: 24px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">⚠️ LOW STOCK WARNING ALERT</h1>
+        </div>
+        <div style="padding: 24px; color: #334155;">
+          <h2 style="color: #991b1b; margin-top: 0;">Inventory Threshold Warning</h2>
+          <p>Inventory level for <strong>${productName}</strong> (SKU: <code>${sku}</code>) at <strong>${warehouseName}</strong> has dropped below the safety reorder threshold.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background: #fee2e2;">
+              <td style="padding: 10px; font-weight: bold; border-bottom: 1px solid #fca5a5; color: #991b1b;">Current Stock:</td>
+              <td style="padding: 10px; border-bottom: 1px solid #fca5a5; font-weight: bold; color: #dc2626;">${currentStock} units</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0;">Reorder Threshold Limit:</td>
+              <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${reorderLevel} units</td>
+            </tr>
+          </table>
+          <p style="color: #475569;">Please issue a stock replenishment order immediately to avoid stockout errors.</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return sendEmail({
+    to,
+    subject: `⚠️ LOW STOCK ALERT: ${productName} (${currentStock} units left)`,
     html,
   });
 }

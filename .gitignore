@@ -2,7 +2,7 @@
 .env
 .env.local
 .env.*.local
-.env*
+!.env.example
 
 # Dependency directories
 node_modules/
@@ -10,6 +10,11 @@ node_modules/
 # Production / Build output
 dist/
 build/
+coverage/
+
+# Docker Local Overrides
+docker-compose.override.yml
+docker-compose*.override.yml
 
 # Logs
 logs/

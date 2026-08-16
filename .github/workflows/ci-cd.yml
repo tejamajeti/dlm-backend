@@ -75,8 +75,8 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      # 10. Deploy exact SHA image to Oracle Cloud VPS via SSH
-      - name: Deploy to Production VPS
+      # 10. Deploy exact SHA image to Production Server via SSH
+      - name: Deploy to Production Server
         uses: appleboy/ssh-action@v1.2.0
         env:
           IMAGE_TAG: ${{ github.sha }}
@@ -90,7 +90,7 @@ jobs:
             set -euo pipefail
 
             echo "======================================"
-            echo "Starting Backend Oracle Cloud Deployment"
+            echo "Starting Backend Production Deployment"
             echo "Target Image: ${IMAGE_NAME}:${IMAGE_TAG}"
             echo "======================================"
 

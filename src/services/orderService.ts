@@ -28,6 +28,7 @@ export async function createOrder(data: {
   destination_city: string;
   destination_zip: string;
   total_amount: number;
+  currency?: string;
   driver_id?: string;
 }) {
   const trackingNumber = `DLM-${Math.floor(100000 + Math.random() * 900000)}-US`;
@@ -43,6 +44,7 @@ export async function createOrder(data: {
     destination_zip: data.destination_zip,
     status: 'CREATED',
     total_amount: data.total_amount || 0.0,
+    currency: data.currency || 'USD',
     driver_id: data.driver_id || null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -67,6 +69,7 @@ export async function createOrder(data: {
     orderId: createdOrder.id,
     trackingNumber: createdOrder.tracking_number,
     totalAmount: createdOrder.total_amount,
+    currency: createdOrder.currency,
   });
 
   return { ...createdOrder, packages: [newPkg] };

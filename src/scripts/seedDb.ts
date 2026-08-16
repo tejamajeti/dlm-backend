@@ -8,36 +8,36 @@ export async function seedDatabase() {
 
   await initializeDatabase();
 
-  const passwordHash = await bcrypt.hash('password123', 10);
+  const passwordHash = await bcrypt.hash('Teja@512', 10);
 
-  // 1. USERS
+  // 1. USERS (Consistent IDs: usr_[role]_[index])
   const users = [
     {
       id: 'usr_admin_01',
-      email: 'admin@dlm.logistics',
+      email: 'tejasaimanikanta2004@gmail.com',
       password_hash: passwordHash,
-      full_name: 'Alex Mercer (Admin)',
+      full_name: 'TEJA MAJETI(Admin)',
       role: 'Admin',
-      phone: '+1 (555) 019-2831',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80',
+      phone: '+91 8122559225',
+      avatar: '',
     },
     {
-      id: 'usr_mgr_nyc',
+      id: 'usr_manager_01',
       email: 'manager.nyc@dlm.logistics',
       password_hash: passwordHash,
       full_name: 'Sarah Connor (NYC Manager)',
       role: 'Warehouse Manager',
       phone: '+1 (555) 018-9922',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=250&q=80',
+      avatar: '',
     },
     {
-      id: 'usr_mgr_la',
+      id: 'usr_manager_02',
       email: 'manager.la@dlm.logistics',
       password_hash: passwordHash,
       full_name: 'Michael Scott (LA Manager)',
       role: 'Warehouse Manager',
       phone: '+1 (555) 017-3344',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80',
+      avatar: '',
     },
     {
       id: 'usr_driver_01',
@@ -46,7 +46,7 @@ export async function seedDatabase() {
       full_name: 'John Wick (Fleet Driver)',
       role: 'Driver',
       phone: '+1 (555) 014-5566',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80',
+      avatar: '',
     },
     {
       id: 'usr_driver_02',
@@ -55,7 +55,7 @@ export async function seedDatabase() {
       full_name: 'Elena Rostova (Express Driver)',
       role: 'Driver',
       phone: '+1 (555) 012-7788',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80',
+      avatar: '',
     },
     {
       id: 'usr_customer_01',
@@ -64,11 +64,11 @@ export async function seedDatabase() {
       full_name: 'Bruce Wayne (Acme Corp)',
       role: 'Customer',
       phone: '+1 (555) 011-0011',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80',
+      avatar: '',
     },
   ];
 
-  // 2. WAREHOUSES
+  // 2. WAREHOUSES (Consistent IDs & Codes: wh_[city_code] & WH-[CITY_3]-[INDEX])
   const warehouses = [
     {
       id: 'wh_nyc_01',
@@ -82,7 +82,7 @@ export async function seedDatabase() {
       current_occupancy: 32400,
       latitude: 40.7128,
       longitude: -74.006,
-      manager_id: 'usr_mgr_nyc',
+      manager_id: 'usr_manager_01',
     },
     {
       id: 'wh_la_01',
@@ -96,7 +96,7 @@ export async function seedDatabase() {
       current_occupancy: 51200,
       latitude: 34.0522,
       longitude: -118.2437,
-      manager_id: 'usr_mgr_la',
+      manager_id: 'usr_manager_02',
     },
     {
       id: 'wh_chi_01',
@@ -114,7 +114,7 @@ export async function seedDatabase() {
     },
   ];
 
-  // 3. PRODUCTS
+  // 3. PRODUCTS (Consistent IDs & SKUs: prod_[name] & SKU-[CAT]-[NUM])
   const products = [
     {
       id: 'prod_macbook_pro',
@@ -122,7 +122,7 @@ export async function seedDatabase() {
       name: 'MacBook Pro 16" M3 Max',
       description: 'High performance laptop for logistics operations',
       category: 'Electronics',
-      unit_price: 3499.00,
+      unit_price: 3499.0,
       weight_kg: 2.15,
     },
     {
@@ -132,7 +132,7 @@ export async function seedDatabase() {
       description: 'Ergonomic IPS display panel',
       category: 'Electronics',
       unit_price: 899.99,
-      weight_kg: 8.50,
+      weight_kg: 8.5,
     },
     {
       id: 'prod_ergonomic_chair',
@@ -140,8 +140,8 @@ export async function seedDatabase() {
       name: 'Herman Miller Aeron Chair',
       description: 'Executive ergonomic mesh office seating',
       category: 'Furniture',
-      unit_price: 1450.00,
-      weight_kg: 18.00,
+      unit_price: 1450.0,
+      weight_kg: 18.0,
     },
     {
       id: 'prod_iot_tracker',
@@ -149,12 +149,12 @@ export async function seedDatabase() {
       name: 'DLM Fleet GPS IoT Sensor',
       description: 'Real-time temperature and location telemetry beacon',
       category: 'Hardware',
-      unit_price: 199.50,
+      unit_price: 199.5,
       weight_kg: 0.35,
     },
   ];
 
-  // 4. INVENTORY
+  // 4. INVENTORY (Consistent IDs: inv_[index])
   const inventory = [
     { id: 'inv_01', warehouse_id: 'wh_nyc_01', product_id: 'prod_macbook_pro', quantity: 150, reorder_level: 25, reorder_quantity: 100 },
     { id: 'inv_02', warehouse_id: 'wh_nyc_01', product_id: 'prod_dell_monitor', quantity: 80, reorder_level: 15, reorder_quantity: 50 },
@@ -163,7 +163,7 @@ export async function seedDatabase() {
     { id: 'inv_05', warehouse_id: 'wh_chi_01', product_id: 'prod_iot_tracker', quantity: 1200, reorder_level: 200, reorder_quantity: 500 },
   ];
 
-  // 5. ORDERS & PACKAGES
+  // 5. ORDERS & PACKAGES (Consistent Tracking: DLM-[6DIGIT]-US & PKG-[CITY]-[CODE])
   const orders = [
     {
       id: 'ord_10001',
@@ -187,7 +187,7 @@ export async function seedDatabase() {
       destination_city: 'Los Angeles',
       destination_zip: '91608',
       status: 'OUT_FOR_DELIVERY',
-      total_amount: 1450.00,
+      total_amount: 1450.0,
       driver_id: 'usr_driver_02',
       created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
     },
@@ -200,7 +200,7 @@ export async function seedDatabase() {
       destination_city: 'Chicago',
       destination_zip: '60606',
       status: 'DELIVERED',
-      total_amount: 798.00,
+      total_amount: 798.0,
       driver_id: 'usr_driver_01',
       created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
     },
@@ -208,7 +208,7 @@ export async function seedDatabase() {
 
   const packages = [
     {
-      id: 'pkg_01',
+      id: 'pkg_10001',
       order_id: 'ord_10001',
       package_code: 'PKG-NYC-892401',
       weight_kg: 10.65,
@@ -217,10 +217,10 @@ export async function seedDatabase() {
       status: 'IN_TRANSIT',
     },
     {
-      id: 'pkg_02',
+      id: 'pkg_10002',
       order_id: 'ord_10002',
       package_code: 'PKG-LA-991204',
-      weight_kg: 18.00,
+      weight_kg: 18.0,
       dimensions: '65x65x110 cm',
       current_location: 'Van #42 (Driver John Wick)',
       status: 'OUT_FOR_DELIVERY',
@@ -261,7 +261,7 @@ export async function seedDatabase() {
     },
     {
       id: 'notif_02',
-      user_id: 'usr_mgr_la',
+      user_id: 'usr_manager_02',
       title: 'Low Stock Alert',
       message: 'Herman Miller Aeron Chair stock in WH-LA-01 dropped to 45 (Threshold: 10).',
       type: 'WARNING',
@@ -277,7 +277,7 @@ export async function seedDatabase() {
       action: 'SYSTEM_BOOTSTRAP',
       entity: 'SYSTEM',
       entity_id: 'sys_root',
-      details: { event: 'Database seeded and event bus initialized.' },
+      details: { event: 'Database seeded with standard consistent entity IDs.' },
     },
   ];
 
@@ -322,12 +322,12 @@ export async function seedDatabase() {
       for (const l of auditLogs) {
         if (!(await findById('audit_logs', l.id))) await insert('audit_logs', l);
       }
-      console.log('✅ PostgreSQL Database seeded successfully with demo records.');
+      console.log('✅ PostgreSQL Database seeded successfully with standard consistent records.');
     } catch (err) {
       console.error('Error inserting seed data to Postgres:', err);
     }
   } else {
-    console.log('✅ In-memory database seeded successfully with demo records.');
+    console.log('✅ In-memory database seeded successfully with standard consistent records.');
   }
 }
 

@@ -1,15 +1,15 @@
 version: '3.8'
 
 services:
-  # 1. PostgreSQL Database
+  # 1. Local PostgreSQL Database (Optional fallback if not using external Supabase)
   postgres:
     image: postgres:15-alpine
     container_name: dlm-backend-postgres
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: teja512
-      POSTGRES_DB: dml
+      POSTGRES_USER: ${PGUSER:-postgres}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-teja512}
+      POSTGRES_DB: ${PGDATABASE:-dml}
     ports:
       - "5432:5432"
     volumes:
@@ -27,61 +27,69 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # 3. Zookeeper
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    container_name: dlm-backend-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-
-  # 4. Kafka Event Bus Broker
+  # 3. Apache Kafka Event Bus Broker (KRaft Mode - ZooKeeper-less Raft Consensus)
   kafka:
-    image: confluentinc/cp-kafka:7.4.0
+    image: confluentinc/cp-kafka:7.5.0
     container_name: dlm-backend-kafka
-    depends_on:
-      - zookeeper
+    restart: always
     ports:
       - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_KEY_CONVERTER: 'org.apache.kafka.connect.storage.StringConverter'
+      KAFKA_VALUE_CONVERTER: 'org.apache.kafka.connect.storage.StringConverter'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    volumes:
+      - kafka_data:/var/lib/kafka/data
 
-  # 5. Express API Microservice
+  # 4. Express API Microservice (Reads Database config dynamically from .env)
   backend:
-    image: ghcr.io/${IMAGE_OWNER:-teja}/dlm-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/${IMAGE_OWNER:-tejamajeti}/dlm-backend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
     container_name: dlm-backend-service
     restart: always
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       kafka:
         condition: service_started
-    expose:
-      - "5000"
+    ports:
+      - "5000:5000"
     environment:
-      PORT: 5000
-      NODE_ENV: production
-      PGHOST: postgres
-      PGPORT: 5432
-      PGUSER: postgres
-      PGPASSWORD: teja512
-      PGDATABASE: dml
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      KAFKA_BROKERS: kafka:9092
-      JWT_SECRET: dlm_super_secret_jwt_key_2026_production_ready
+      PORT: ${PORT:-5000}
+      NODE_ENV: ${NODE_ENV:-production}
+      PGHOST: ${PGHOST:-postgres}
+      PGPORT: ${PGPORT:-5432}
+      PGUSER: ${PGUSER:-postgres}
+      PGPASSWORD: ${PGPASSWORD:-teja512}
+      PGDATABASE: ${PGDATABASE:-dml}
+      PGSSL: ${PGSSL:-true}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:29092}
+      JWT_SECRET: ${JWT_SECRET:-DLMService@512}
 
-  # 6. Nginx API Gateway & Reverse Proxy
+  # 5. Nginx API Gateway & Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: dlm-backend-nginx
@@ -89,9 +97,10 @@ services:
     depends_on:
       - backend
     ports:
-      - "5000:80"
+      - "8080:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 
 volumes:
   postgres_data:
+  kafka_data:

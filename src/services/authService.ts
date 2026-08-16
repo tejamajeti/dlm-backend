@@ -23,7 +23,9 @@ export async function registerUser(data: {
   }
 
   const password_hash = await bcrypt.hash(data.password, 10);
-  const userRole = data.role || 'Customer';
+  // Prevent public self-registration of elevated privilege roles (Admin / Operator)
+  const requestedRole = data.role || 'Customer';
+  const userRole = (requestedRole === 'Admin' || requestedRole === 'Operator') ? 'Customer' : requestedRole;
   const userId = `usr_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
   const newUser = {

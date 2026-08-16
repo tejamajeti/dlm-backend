@@ -13,22 +13,38 @@ export async function getWarehouseById(id: string) {
 }
 
 export async function createWarehouse(data: {
-  code: string;
+  code?: string;
   name: string;
   address: string;
   city: string;
   state: string;
   zip_code: string;
   capacity: number;
+  current_occupancy?: number;
   latitude?: number;
   longitude?: number;
   manager_id?: string;
 }) {
-  const id = `wh_${data.code.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+  const existingWarehouses = await findMany('warehouses');
+
+  // Enforce consistent format WH-[CITY_3]-[INDEX_2_DIGITS] (e.g. WH-NYC-01, WH-MIA-01)
+  let formattedCode = (data.code || '').trim().toUpperCase();
+  
+  if (!formattedCode || !formattedCode.startsWith('WH-')) {
+    const cityClean = (data.city || 'HUB').replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'HUB';
+    const sameCityCount = existingWarehouses.filter(
+      (w) => w.city && w.city.toLowerCase() === (data.city || '').toLowerCase()
+    ).length + 1;
+    formattedCode = `WH-${cityClean}-0${sameCityCount}`;
+  }
+
+  const id = `wh_${formattedCode.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+
   const newWh = {
     id,
     ...data,
-    current_occupancy: 0,
+    code: formattedCode,
+    current_occupancy: data.current_occupancy || 0,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -42,4 +58,31 @@ export async function createWarehouse(data: {
   });
 
   return created;
+}
+
+export async function updateWarehouse(
+  id: string,
+  data: Partial<{
+    code: string;
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    capacity: number;
+    current_occupancy: number;
+    latitude: number;
+    longitude: number;
+    manager_id: string;
+  }>
+) {
+  const existing = await findById('warehouses', id);
+  if (!existing) throw { statusCode: 404, message: 'Warehouse facility not found' };
+
+  const updated = await update('warehouses', id, {
+    ...data,
+    updated_at: new Date().toISOString(),
+  });
+
+  return updated;
 }
