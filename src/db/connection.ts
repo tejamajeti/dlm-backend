@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const useSsl = process.env.PGSSL === 'true' || (process.env.PGHOST && !process.env.PGHOST.includes('localhost') && !process.env.PGHOST.includes('postgres'));
+
 const poolConfig: pg.PoolConfig = {
   host: process.env.PGHOST || 'localhost',
   port: parseInt(process.env.PGPORT || '5432', 10),
@@ -12,7 +14,8 @@ const poolConfig: pg.PoolConfig = {
   database: process.env.PGDATABASE || 'dml',
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
+  ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 };
 
 export const pool = new Pool(poolConfig);
