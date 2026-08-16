@@ -10,7 +10,7 @@ function run(command) {
   }
 }
 
-console.log('\n🚀 Deploying main → production...\n');
+console.log('\n🚀 Mirroring main → production...\n');
 
 // 1. Ensure working directory is clean
 try {
@@ -28,21 +28,25 @@ try {
   // 2. Fetch latest remote changes
   run('git fetch origin');
 
-  // 3. Update main
+  // 3. Ensure main branch is up to date
   run('git checkout main');
   run('git pull origin main --rebase');
 
-  // 4. Update production
-  run('git checkout production');
-  run('git pull origin production --rebase');
+  // 4. Checkout production (or create if missing)
+  try {
+    run('git checkout production');
+  } catch (e) {
+    console.log('ℹ️ Creating local production branch...');
+    run('git checkout -b production');
+  }
 
-  // 5. Sync production to match main cleanly
-  run('git merge main --no-ff -m "chore(release): deploy main to production"');
+  // 5. Hard reset production to match main EXACTLY (0 extra merge commits!)
+  run('git reset --hard main');
 
-  // 6. Push to remote production branch
-  run('git push origin production');
+  // 6. Push production branch to remote cleanly
+  run('git push origin production --force-with-lease');
 
-  console.log('\n✅ Production branch updated successfully.');
+  console.log('\n✅ Production branch mirrored to main successfully (0 divergence).');
   console.log('🚀 GitHub Actions will build and push the Docker image to GHCR.');
   console.log('📦 Railway will then deploy the live release.\n');
 } catch (error) {
