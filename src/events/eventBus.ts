@@ -5,7 +5,7 @@ import { insert } from '../db/crudHelper';
 import { KafkaEventPayload } from '../types/index';
 import { initNotificationSubscribers } from './subscribers/notificationSubscriber';
 
-dotenv.config();
+process.env.KAFKAJS_NO_PARTITIONER_WARNING = '1';
 
 const kafkaBrokers = (process.env.KAFKA_BROKERS || 'localhost:9092').split(',');
 const kafkaClientId = process.env.KAFKA_CLIENT_ID || 'dlm-logistics-service';
@@ -14,9 +14,10 @@ const kafka = new Kafka({
   clientId: kafkaClientId,
   brokers: kafkaBrokers,
   retry: {
-    retries: 2,
-    initialRetryTime: 300,
+    retries: 1,
+    initialRetryTime: 100,
   },
+  connectionTimeout: 1000,
 });
 
 let producer: Producer | null = null;
@@ -25,6 +26,12 @@ let isKafkaConnected = false;
 const localBus = new EventEmitter();
 
 export async function initEventBus() {
+  if (process.env.NODE_ENV === 'test') {
+    isKafkaConnected = false;
+    initNotificationSubscribers();
+    return;
+  }
+
   try {
     producer = kafka.producer();
     await producer.connect();
