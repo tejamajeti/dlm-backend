@@ -6,44 +6,50 @@ function run(command) {
     execSync(command, { stdio: 'inherit' });
   } catch (error) {
     console.error(`\x1b[31m❌ Command failed: ${command}\x1b[0m`);
-    process.exit(1);
+    throw error;
   }
 }
 
-console.log('🚀 Syncing main branch to production deployment...');
+console.log('\n🚀 Deploying main → production...\n');
 
-// 1. Check working directory status
+// 1. Ensure working directory is clean
 try {
   const status = execSync('git status --porcelain').toString().trim();
   if (status) {
-    console.error('\x1b[31m❌ Uncommitted changes detected. Please commit or stash changes before deploying to production.\x1b[0m');
+    console.error('\x1b[31m❌ Uncommitted changes detected.\x1b[0m');
+    console.error('Commit or stash your changes before deploying to production.');
     process.exit(1);
   }
-} catch (e) {}
-
-// 2. Fetch latest changes
-run('git fetch origin');
-
-// 3. Update main branch
-run('git checkout main');
-run('git pull origin main --rebase');
-
-// 4. Switch to production branch
-try {
-  run('git checkout production');
-  run('git pull origin production --rebase');
 } catch (e) {
-  console.log('ℹ️ Creating local production branch...');
-  run('git checkout -b production');
+  process.exit(1);
 }
 
-// 5. Merge main into production cleanly
-run('git merge main --no-ff -m "chore(release): deploy main to production"');
+try {
+  // 2. Fetch latest remote changes
+  run('git fetch origin');
 
-// 6. Push to remote production branch
-run('git push origin production');
+  // 3. Update main
+  run('git checkout main');
+  run('git pull origin main --rebase');
 
-// 7. Return to main working branch
-run('git checkout main');
+  // 4. Update production
+  run('git checkout production');
+  run('git pull origin production --rebase');
 
-console.log('✅ Success! Main branch synced to production. GitHub Actions and live hosting pipeline triggered.');
+  // 5. Sync production to match main cleanly
+  run('git merge main --no-ff -m "chore(release): deploy main to production"');
+
+  // 6. Push to remote production branch
+  run('git push origin production');
+
+  console.log('\n✅ Production branch updated successfully.');
+  console.log('🚀 GitHub Actions will build and push the Docker image to GHCR.');
+  console.log('📦 Railway will then deploy the live release.\n');
+} catch (error) {
+  console.error('\x1b[31m\n❌ Deployment script aborted due to error.\x1b[0m');
+} finally {
+  // 7. ALWAYS return to main working branch safely
+  try {
+    run('git checkout main');
+  } catch (e) {}
+}
