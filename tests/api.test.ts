@@ -17,8 +17,8 @@ describe('DLM Logistics API Tests', () => {
     const res = await request(app)
       .post('/api/v1/public/auth/login')
       .send({
-        email: 'tejasaimanikanta2004@gmail.com',
-        password: 'Teja@512',
+        email: 'admin@dlm.logistics',
+        password: 'Admin@123',
       });
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
@@ -35,8 +35,8 @@ describe('DLM Logistics API Tests', () => {
     const loginRes = await request(app)
       .post('/api/v1/public/auth/login')
       .send({
-        email: 'tejasaimanikanta2004@gmail.com',
-        password: 'Teja@512',
+        email: 'admin@dlm.logistics',
+        password: 'Admin@123',
       });
     const token = loginRes.body.data.token;
 

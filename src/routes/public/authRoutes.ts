@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { loginUser, registerUser } from '../../services/authService';
+import { loginUser, registerUser, refreshAccessToken, revokeRefreshToken } from '../../services/authService';
 import { authRateLimiter } from '../../middleware/rateLimiter';
 
 const router = Router();
 
 /**
  * @route   POST /api/v1/public/auth/login
- * @desc    Authenticate user & return JWT token
+ * @desc    Authenticate user & return access token and refresh token
  * @access  Public
  */
 router.post('/login', authRateLimiter, async (req, res, next) => {
@@ -35,6 +35,41 @@ router.post('/register', authRateLimiter, async (req, res, next) => {
     }
     const result = await registerUser({ email, password, full_name, role, phone });
     res.status(201).json({ success: true, message: 'User registered successfully', data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route   POST /api/v1/public/auth/refresh
+ * @desc    Issue a new short-lived Access Token using a valid Refresh Token
+ * @access  Public
+ */
+router.post('/refresh', async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ success: false, error: 'Validation Error', message: 'refreshToken is required' });
+    }
+    const result = await refreshAccessToken(refreshToken);
+    res.json({ success: true, message: 'Access token refreshed successfully', data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route   POST /api/v1/public/auth/logout
+ * @desc    Revoke user refresh token on logout
+ * @access  Public
+ */
+router.post('/logout', async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    if (refreshToken) {
+      await revokeRefreshToken(refreshToken);
+    }
+    res.json({ success: true, message: 'Logged out successfully' });
   } catch (err) {
     next(err);
   }

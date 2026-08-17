@@ -1,9 +1,24 @@
 import { findMany, findById, insert, update } from '../db/crudHelper';
 import { publishEvent } from '../events/eventBus';
 import { KAFKA_TOPICS } from '../events/topics';
+import { cacheGet, cacheSet, cacheDel } from '../config/redis';
 
+/**
+ * Cache-Aside Pattern:
+ * 1. Check Redis for 'warehouses:all'
+ * 2. Return cached list if present
+ * 3. Query Database on cache miss -> store in Redis with 600s TTL
+ */
 export async function getWarehouses() {
-  return await findMany('warehouses');
+  const cacheKey = 'warehouses:all';
+  const cached = await cacheGet(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const warehouses = await findMany('warehouses');
+  await cacheSet(cacheKey, warehouses, 600);
+  return warehouses;
 }
 
 export async function getWarehouseById(id: string) {
@@ -51,6 +66,9 @@ export async function createWarehouse(data: {
 
   const created = await insert('warehouses', newWh);
 
+  // Invalidate warehouse list cache in Redis
+  await cacheDel('warehouses:all');
+
   await publishEvent(KAFKA_TOPICS.WAREHOUSE_CREATED, {
     warehouseId: created.id,
     code: created.code,
@@ -83,6 +101,9 @@ export async function updateWarehouse(
     ...data,
     updated_at: new Date().toISOString(),
   });
+
+  // Invalidate warehouse list cache in Redis
+  await cacheDel('warehouses:all');
 
   return updated;
 }

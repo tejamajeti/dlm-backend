@@ -1,6 +1,7 @@
 import { findMany, findById, insert, update } from '../db/crudHelper';
 import { publishEvent } from '../events/eventBus';
 import { KAFKA_TOPICS } from '../events/topics';
+import { cacheGet, cacheSet, cacheDel } from '../config/redis';
 
 export async function getOrders(filters: { status?: string; customer_id?: string; driver_id?: string } = {}) {
   return await findMany('orders', filters, { orderBy: 'created_at DESC' });
@@ -13,12 +14,32 @@ export async function getOrderById(id: string) {
   return { ...order, packages };
 }
 
+/**
+ * Cache-Aside Pattern:
+ * 1. Check Redis cache for 'tracking:<trackingNumber>'
+ * 2. Cache Hit -> Return cached payload directly
+ * 3. Cache Miss -> Query Database -> Store payload in Redis with 300s TTL -> Return result
+ */
 export async function getOrderByTracking(trackingNumber: string) {
+  const cacheKey = `tracking:${trackingNumber}`;
+  
+  // 1. Check Redis Cache first
+  const cachedData = await cacheGet(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
+
+  // 2. Fallback to Database Query on Cache Miss
   const orders = await findMany('orders', { tracking_number: trackingNumber });
   if (orders.length === 0) throw { statusCode: 404, message: 'Shipment with this tracking number not found' };
   const order = orders[0];
   const packages = await findMany('packages', { order_id: order.id });
-  return { ...order, packages };
+  const result = { ...order, packages };
+
+  // 3. Store result in Redis Cache with 5 minute TTL (300s)
+  await cacheSet(cacheKey, result, 300);
+
+  return result;
 }
 
 export async function createOrder(data: {
@@ -90,6 +111,9 @@ export async function updateOrderStatus(orderId: string, status: string, actorId
       await update('packages', pkgs[0].id, { current_location: currentLocation, status });
     }
   }
+
+  // Invalidate tracking cache in Redis on status update
+  await cacheDel(`tracking:${updatedOrder.tracking_number}`);
 
   // Publish corresponding Kafka Topic based on status
   let topic: string = KAFKA_TOPICS.ORDER_PACKED;

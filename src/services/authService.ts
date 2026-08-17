@@ -4,11 +4,14 @@ import dotenv from 'dotenv';
 import { findMany, insert, findById } from '../db/crudHelper';
 import { publishEvent } from '../events/eventBus';
 import { KAFKA_TOPICS } from '../events/topics';
+import { cacheSet, cacheGet, cacheDel } from '../config/redis';
 
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dlm_super_secret_jwt_key_2026_production_ready';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m'; // Short-lived Access Token (15 min)
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'; // Long-lived Refresh Token (7 days)
+const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 3600; // 7 days in seconds
 
 export async function registerUser(data: {
   email: string;
@@ -48,10 +51,12 @@ export async function registerUser(data: {
     role: created.role,
   });
 
-  const token = generateJwtToken(created);
+  const accessToken = generateJwtToken(created, JWT_EXPIRES_IN);
+  const refreshToken = await generateRefreshToken(created);
+
   const { password_hash: _, ...userWithoutPassword } = created;
 
-  return { user: userWithoutPassword, token };
+  return { user: userWithoutPassword, token: accessToken, refreshToken };
 }
 
 export async function loginUser(email: string, password: string) {
@@ -66,13 +71,18 @@ export async function loginUser(email: string, password: string) {
     throw { statusCode: 401, message: 'Invalid credentials' };
   }
 
-  const token = generateJwtToken(user);
+  const accessToken = generateJwtToken(user, JWT_EXPIRES_IN);
+  const refreshToken = await generateRefreshToken(user);
+
   const { password_hash: _, ...userWithoutPassword } = user;
 
-  return { user: userWithoutPassword, token };
+  return { user: userWithoutPassword, token: accessToken, refreshToken };
 }
 
-export function generateJwtToken(user: any) {
+/**
+ * Generate short-lived Access Token (JWT)
+ */
+export function generateJwtToken(user: any, customExpiresIn?: string) {
   return jwt.sign(
     {
       id: user.id,
@@ -81,6 +91,82 @@ export function generateJwtToken(user: any) {
       full_name: user.full_name,
     },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN as any }
+    { expiresIn: (customExpiresIn || JWT_EXPIRES_IN) as any }
   );
+}
+
+/**
+ * Generate long-lived Refresh Token (7 days) and save state in Redis
+ */
+export async function generateRefreshToken(user: any): Promise<string> {
+  const refreshToken = jwt.sign(
+    {
+      id: user.id,
+      type: 'refresh',
+    },
+    JWT_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRES_IN as any }
+  );
+
+  // Store refresh token session in Redis cache with 7 day TTL
+  await cacheSet(
+    `refresh:${refreshToken}`,
+    {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      created_at: new Date().toISOString(),
+    },
+    REFRESH_TOKEN_TTL_SECONDS
+  );
+
+  return refreshToken;
+}
+
+/**
+ * Refresh Access Token using Refresh Token
+ */
+export async function refreshAccessToken(refreshToken: string) {
+  if (!refreshToken) {
+    throw { statusCode: 400, message: 'Refresh token is required' };
+  }
+
+  // 1. Verify token signature
+  let decoded: any;
+  try {
+    decoded = jwt.verify(refreshToken, JWT_SECRET);
+  } catch (err: any) {
+    throw { statusCode: 401, message: 'Invalid or expired refresh token' };
+  }
+
+  // 2. Check token in Redis store
+  const cachedSession = await cacheGet(`refresh:${refreshToken}`);
+  if (!cachedSession) {
+    throw { statusCode: 401, message: 'Refresh token has been revoked or expired' };
+  }
+
+  // 3. Load user account
+  const user = await findById('users', decoded.id);
+  if (!user) {
+    throw { statusCode: 401, message: 'User associated with refresh token not found' };
+  }
+
+  // 4. Issue a new 15-minute Access Token
+  const newAccessToken = generateJwtToken(user, JWT_EXPIRES_IN);
+  const { password_hash: _, ...userWithoutPassword } = user;
+
+  return {
+    user: userWithoutPassword,
+    token: newAccessToken,
+    refreshToken,
+  };
+}
+
+/**
+ * Revoke Refresh Token (on logout)
+ */
+export async function revokeRefreshToken(refreshToken: string): Promise<void> {
+  if (refreshToken) {
+    await cacheDel(`refresh:${refreshToken}`);
+  }
 }

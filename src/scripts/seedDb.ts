@@ -8,17 +8,17 @@ export async function seedDatabase() {
 
   await initializeDatabase();
 
-  const passwordHash = await bcrypt.hash('Teja@512', 10);
+  const passwordHash = await bcrypt.hash('Admin@123', 10);
 
   // 1. USERS (Consistent IDs: usr_[role]_[index])
   const users = [
     {
       id: 'usr_admin_01',
-      email: 'tejasaimanikanta2004@gmail.com',
+      email: 'admin@dlm.logistics',
       password_hash: passwordHash,
-      full_name: 'TEJA MAJETI(Admin)',
+      full_name: 'Alex Vance (Admin)',
       role: 'Admin',
-      phone: '+91 8122559225',
+      phone: '+1 (555) 019-8800',
       avatar: '',
     },
     {
