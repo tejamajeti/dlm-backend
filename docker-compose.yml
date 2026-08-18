@@ -9,13 +9,13 @@ services:
     environment:
       POSTGRES_USER: ${PGUSER:-postgres}
       POSTGRES_PASSWORD: ${PGPASSWORD}
-      POSTGRES_DB: ${PGDATABASE:-dml}
+      POSTGRES_DB: ${PGDATABASE:-postgres}
     ports:
-      - "5432:5432"
+      - "${PGPORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-postgres} -d ${PGDATABASE:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,7 +26,7 @@ services:
     container_name: dlm-backend-redis
     restart: always
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       interval: 5s
@@ -56,11 +56,11 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
-      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
     volumes:
       - kafka_data:/var/lib/kafka/data
 
-  # 4. Express API Microservice (Reads Database config dynamically from .env)
+  # 4. Express API Microservice (Reads Database config dynamically from .env or container environment)
   backend:
     image: ghcr.io/${IMAGE_OWNER:-tejamajeti}/dlm-backend:${IMAGE_TAG:-latest}
     build:
@@ -74,20 +74,24 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "5000:5000"
+      - "${PORT:-5000}:${PORT:-5000}"
+    env_file:
+      - .env
     environment:
-      PORT: ${PORT:-5000}
-      NODE_ENV: ${NODE_ENV:-production}
-      PGHOST: ${PGHOST:-postgres}
-      PGPORT: ${PGPORT:-5432}
-      PGUSER: ${PGUSER:-postgres}
+      PORT: ${PORT}
+      NODE_ENV: ${NODE_ENV}
+      PGHOST: ${PGHOST}
+      PGPORT: ${PGPORT}
+      PGUSER: ${PGUSER}
       PGPASSWORD: ${PGPASSWORD}
-      PGDATABASE: ${PGDATABASE:-dml}
-      PGSSL: ${PGSSL:-true}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:29092}
+      PGDATABASE: ${PGDATABASE}
+      PGSSL: ${PGSSL}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
       JWT_SECRET: ${JWT_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
 
   # 5. Nginx API Gateway & Reverse Proxy
   nginx:
@@ -97,7 +101,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "8080:80"
+      - "${NGINX_PORT:-8080}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 

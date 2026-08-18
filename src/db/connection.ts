@@ -30,6 +30,7 @@ export async function checkDbConnection(): Promise<boolean> {
     client.release();
     return true;
   } catch (error) {
+    console.error('❌ PostgreSQL connection error:', error);
     return false;
   }
 }
