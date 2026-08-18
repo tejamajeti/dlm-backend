@@ -7,11 +7,11 @@ dotenv.config();
 const useSsl = process.env.PGSSL === 'true' || (process.env.PGHOST && !process.env.PGHOST.includes('localhost') && !process.env.PGHOST.includes('postgres'));
 
 const poolConfig: pg.PoolConfig = {
-  host: process.env.PGHOST || 'localhost',
+  host: process.env.PGHOST,
   port: parseInt(process.env.PGPORT || '5432', 10),
-  user: process.env.PGUSER || 'postgres',
-  password: process.env.PGPASSWORD || 'teja512',
-  database: process.env.PGDATABASE || 'dml',
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  database: process.env.PGDATABASE,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,

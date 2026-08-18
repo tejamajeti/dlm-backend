@@ -83,10 +83,10 @@ services:
       NODE_ENV: production
       PGHOST: localhost
       PGPORT: 5432
-      PGUSER: postgres
-      PGPASSWORD: teja512
-      PGDATABASE: dml
-      JWT_SECRET: dlm_super_secret_jwt_key_2026_production_ready
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
+      JWT_SECRET: ${JWT_SECRET}
 ```
 
 ---

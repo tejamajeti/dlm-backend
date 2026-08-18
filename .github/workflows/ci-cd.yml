@@ -47,9 +47,9 @@ jobs:
       - name: Compile TypeScript
         run: npm run build
 
-      # 6. Set up QEMU for multi-arch OCI compatibility
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      # 6. Set up QEMU (Commented out for fast single-arch Railway builds; uncomment if deploying to ARM64 VPS)
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v3
 
       # 7. Set up Docker Buildx
       - name: Set up Docker Buildx
@@ -63,14 +63,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 9. Build and push Multi-Arch Docker image to GHCR
+      # 9. Build and push Docker image to GHCR (Fast Single-Arch linux/amd64 for Railway)
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      # 10. Prune old / untagged Docker image versions from GHCR
+      - name: Prune Old GHCR Image Versions
+        continue-on-error: true
+        uses: actions/delete-package-versions@v5
+        with:
+          token: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          package-name: 'dlm-backend'
+          package-type: 'container'
+          min-versions-to-keep: 5
+          delete-only-untagged-versions: 'false'
+

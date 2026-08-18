@@ -8,7 +8,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${PGUSER:-postgres}
-      POSTGRES_PASSWORD: ${PGPASSWORD:-teja512}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
       POSTGRES_DB: ${PGDATABASE:-dml}
     ports:
       - "5432:5432"
@@ -81,13 +81,13 @@ services:
       PGHOST: ${PGHOST:-postgres}
       PGPORT: ${PGPORT:-5432}
       PGUSER: ${PGUSER:-postgres}
-      PGPASSWORD: ${PGPASSWORD:-teja512}
+      PGPASSWORD: ${PGPASSWORD}
       PGDATABASE: ${PGDATABASE:-dml}
       PGSSL: ${PGSSL:-true}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:29092}
-      JWT_SECRET: ${JWT_SECRET:-DLMService@512}
+      JWT_SECRET: ${JWT_SECRET}
 
   # 5. Nginx API Gateway & Reverse Proxy
   nginx:

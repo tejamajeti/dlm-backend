@@ -14,7 +14,7 @@ async function ensureDatabaseExists() {
   const host = process.env.PGHOST || 'localhost';
   const port = parseInt(process.env.PGPORT || '5432', 10);
   const user = process.env.PGUSER || 'postgres';
-  const password = process.env.PGPASSWORD || 'teja512';
+  const password = process.env.PGPASSWORD || '';
 
   const client = new Client({
     host,

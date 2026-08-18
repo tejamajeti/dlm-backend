@@ -99,6 +99,7 @@ export async function sendEmail(options: EmailOptions) {
  * 1. Welcome Email (Topic: user.created)
  */
 export async function sendWelcomeEmail(to: string, name: string, role: string) {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5001';
   const html = `
     <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e1e4e8;">
@@ -110,7 +111,7 @@ export async function sendWelcomeEmail(to: string, name: string, role: string) {
           <p>Your account has been successfully created with the role of <strong>${role}</strong>.</p>
           <p>You can now log in to manage your shipments, monitor inventory in real-time, and track order fulfillment across all warehouses.</p>
           <div style="margin: 24px 0; text-align: center;">
-            <a href="http://localhost:3000/login" style="background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Access Dashboard</a>
+            <a href="${frontendUrl}/login" style="background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Access Dashboard</a>
           </div>
           <p style="font-size: 12px; color: #64748b;">If you did not sign up for DLM Logistics, please ignore this message.</p>
         </div>
@@ -165,6 +166,7 @@ export async function sendOrderConfirmationEmail(to: string, orderId: string, tr
  * 3. Package Shipped Email (Topic: package.shipped)
  */
 export async function sendPackageShippedEmail(to: string, trackingNumber: string, currentLocation: string) {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5001';
   const html = `
     <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e1e4e8;">
@@ -175,7 +177,7 @@ export async function sendPackageShippedEmail(to: string, trackingNumber: string
           <h2 style="color: #0f172a;">Your package is on the way!</h2>
           <p>Package tracking ID <strong>${trackingNumber}</strong> has departed origin warehouse and is currently at <strong>${currentLocation}</strong>.</p>
           <div style="margin: 24px 0; text-align: center;">
-            <a href="http://localhost:3000/tracking?tn=${trackingNumber}" style="background: #0284c7; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Track Package Live</a>
+            <a href="${frontendUrl}/tracking?tn=${trackingNumber}" style="background: #0284c7; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Track Package Live</a>
           </div>
         </div>
       </div>
