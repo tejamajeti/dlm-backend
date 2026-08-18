@@ -61,7 +61,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       # 9. Build and push Docker image to GHCR (Fast Single-Arch linux/amd64 for Railway)
       - name: Build and Push Docker Image

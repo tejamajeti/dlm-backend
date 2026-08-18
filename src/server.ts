@@ -74,12 +74,14 @@ async function startServer() {
   await initEventBus();
   await seedDatabase();
 
+  const hostDomain = process.env.APP_URL || `http://localhost:${PORT}`;
+
   app.listen(PORT, () => {
     console.log(`
 ===============================================================
 🚀 DLM Distributed Logistics Engine Running on Port ${PORT}
-📦 Public Routes:    http://localhost:${PORT}/api/v1/public
-🔒 Protected Routes: http://localhost:${PORT}/api/v1/protected
+📦 Public Routes:    ${hostDomain}/api/v1/public
+🔒 Protected Routes: ${hostDomain}/api/v1/protected
 ===============================================================
     `);
   });
