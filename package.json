@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "nodemon dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "live": "git checkout main && git pull origin main && git checkout production && git reset --hard main && git push origin production --force-with-lease && git checkout main",
     "db:init": "ts-node src/scripts/initDb.ts",
@@ -37,6 +37,7 @@
     "@types/pg": "^8.11.6",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.14",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.5",
     "ts-node": "^10.9.2",

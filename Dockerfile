@@ -11,9 +11,9 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --only=production && npm install -g nodemon
 
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 5000
-CMD ["node", "dist/server.js"]
+CMD ["nodemon", "dist/server.js"]
