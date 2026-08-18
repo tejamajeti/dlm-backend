@@ -60,7 +60,7 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
 
-  # 4. Express API Microservice (Reads Database config dynamically from .env or container environment)
+  # 4. Express API Microservice (Loads configuration directly from .env)
   backend:
     image: ghcr.io/${IMAGE_OWNER:-tejamajeti}/dlm-backend:${IMAGE_TAG:-latest}
     build:
@@ -74,29 +74,9 @@ services:
       kafka:
         condition: service_started
     ports:
-      - "${PORT:-5000}:${PORT:-5000}"
+      - "${PORT:-5000}:5000"
     env_file:
       - .env
-    environment:
-      PORT: ${PORT}
-      NODE_ENV: ${NODE_ENV}
-      PGHOST: ${PGHOST}
-      PGPORT: ${PGPORT}
-      PGUSER: ${PGUSER}
-      PGPASSWORD: ${PGPASSWORD}
-      PGDATABASE: ${PGDATABASE}
-      PGSSL: ${PGSSL}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_URL: ${REDIS_URL}
-      REDISHOST: ${REDISHOST}
-      REDISPORT: ${REDISPORT}
-      REDISPASSWORD: ${REDISPASSWORD}
-      REDISUSER: ${REDISUSER}
-      KAFKA_BROKERS: ${KAFKA_BROKERS}
-      JWT_SECRET: ${JWT_SECRET}
-      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
 
   # 5. Nginx API Gateway & Reverse Proxy
   nginx:

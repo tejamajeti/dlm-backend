@@ -12,12 +12,12 @@ const redisPassword = process.env.REDIS_PASSWORD || process.env.REDISPASSWORD ||
 const redisUser = process.env.REDIS_USER || process.env.REDISUSER || undefined;
 
 const options = {
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: 1,
   retryStrategy: (times: number) => {
-    if (times > 5) {
-      return null; // Stop retrying after 5 attempts
+    if (times > 3) {
+      return null; // Stop retrying after 3 attempts
     }
-    return Math.min(times * 200, 2000);
+    return Math.min(times * 300, 1500);
   },
 };
 
@@ -32,21 +32,21 @@ export const redis: Redis = redisUrl
     });
 
 let isRedisConnected = false;
-
-redis.on('connect', () => {
-  console.log('🔄 Connecting to Redis instance...');
-});
+let hasLoggedRedisError = false;
 
 redis.on('ready', () => {
   isRedisConnected = true;
+  hasLoggedRedisError = false;
   console.log('✅ Connected to Redis cache instance successfully.');
 });
 
 redis.on('error', (err) => {
   if (isRedisConnected) {
     console.warn('⚠️ Redis connection lost, switching to memory cache fallback.');
-  } else {
-    console.warn('⚠️ Redis connection error:', err.message);
+    hasLoggedRedisError = true;
+  } else if (!hasLoggedRedisError) {
+    console.warn(`⚠️ Redis connection failed (${err.message}). Operating with resilient in-memory storage fallback.`);
+    hasLoggedRedisError = true;
   }
   isRedisConnected = false;
 });
@@ -54,7 +54,7 @@ redis.on('error', (err) => {
 export async function cacheSet(key: string, value: any, ttlSeconds?: number): Promise<void> {
   const strVal = typeof value === 'string' ? value : JSON.stringify(value);
   try {
-    if (isRedisConnected || redis.status === 'ready') {
+    if (isRedisConnected && redis.status === 'ready') {
       if (ttlSeconds) {
         await redis.set(key, strVal, 'EX', ttlSeconds);
       } else {
@@ -72,7 +72,7 @@ export async function cacheSet(key: string, value: any, ttlSeconds?: number): Pr
 
 export async function cacheGet<T = any>(key: string): Promise<T | null> {
   try {
-    if (isRedisConnected || redis.status === 'ready') {
+    if (isRedisConnected && redis.status === 'ready') {
       const val = await redis.get(key);
       if (val) {
         try {
@@ -102,7 +102,7 @@ export async function cacheGet<T = any>(key: string): Promise<T | null> {
 
 export async function cacheDel(key: string): Promise<void> {
   try {
-    if (isRedisConnected || redis.status === 'ready') {
+    if (isRedisConnected && redis.status === 'ready') {
       await redis.del(key);
       return;
     }
