@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 
 // DB & Services
 import { checkDbConnection } from './db/connection';
-import { seedDatabase } from './scripts/seedDb';
 import { initEventBus } from './events/eventBus';
 
 // Middlewares
@@ -75,7 +74,6 @@ app.use(errorHandler);
 // Server Startup
 async function startServer() {
   await initEventBus();
-  await seedDatabase();
 
   const hostDomain = process.env.APP_URL || `http://localhost:${PORT}`;
 
