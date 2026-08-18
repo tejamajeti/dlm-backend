@@ -30,6 +30,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable trust proxy for reverse proxies / load balancers (e.g. Nginx, Cloudflare, AWS ALB)
+app.set('trust proxy', process.env.TRUST_PROXY ? (isNaN(Number(process.env.TRUST_PROXY)) ? process.env.TRUST_PROXY : Number(process.env.TRUST_PROXY)) : 1);
+
 // Global Middlewares
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
