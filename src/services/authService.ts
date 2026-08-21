@@ -49,6 +49,7 @@ export async function registerUser(data: {
     userId: created.id,
     email: created.email,
     role: created.role,
+    full_name: created.full_name,
   });
 
   const accessToken = generateJwtToken(created, JWT_EXPIRES_IN);
