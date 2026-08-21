@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "nodemon dist/server.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "nodemon --exec ts-node src/server.ts",
     "live": "git checkout main && git pull origin main && git checkout production && git reset --hard main && git push origin production --force-with-lease && git checkout main",
     "db:init": "ts-node src/scripts/initDb.ts",
     "db:seed": "ts-node src/scripts/seedDb.ts",
