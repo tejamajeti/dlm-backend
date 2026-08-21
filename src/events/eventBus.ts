@@ -74,6 +74,7 @@ export async function publishEvent(topic: string, message: Record<string, any>):
         messages: [{ value: JSON.stringify(payload) }],
       });
       console.log(`[Kafka Event Published] -> Topic: ${topic}`);
+      console.log(`[Kafka Event Payload] ->`, payload);
       return payload;
     } catch (e: any) {
       console.warn(`⚠️ Kafka emission failed for topic ${topic} (${e.message}). Falling back to local EventBus.`);

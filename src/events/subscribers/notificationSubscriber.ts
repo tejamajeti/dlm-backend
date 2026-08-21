@@ -26,6 +26,7 @@ export function initNotificationSubscribers() {
   // ------------------------------------------------------------------------
   subscribeEvent(KAFKA_TOPICS.USER_CREATED, async (payload) => {
     try {
+      console.log("[Subscribe Event Called]", payload?.data);
       const { email, role, full_name } = payload.data;
       if (email) {
         console.log(`[Notification Subscriber] Handling user.created for ${email}`);
