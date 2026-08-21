@@ -25,8 +25,9 @@ export async function getTransporter(): Promise<Transporter> {
       host,
       port,
       secure: port === 465,
+      family: 4,
       auth: { user, pass },
-    });
+    } as any);
     isEtherealAccount = false;
     console.log(`✉️ Email Transporter configured via SMTP (${host}:${port})`);
   } else {
