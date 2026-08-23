@@ -1,10 +1,12 @@
 import express from 'express';
+import http from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// DB & Services
+// DB, Services & Real-time WSS Gateway
 import { checkDbConnection } from './db/connection';
 import { initEventBus } from './events/eventBus';
+import { initSocketServer } from './websocket/socketServer';
 
 // Middlewares
 import { authenticateJWT } from './middleware/authMiddleware';
@@ -28,8 +30,12 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
 
-// Enable trust proxy for reverse proxies / load balancers (e.g. Nginx, Cloudflare, AWS ALB)
+// Initialize Real-Time WSS Gateway
+initSocketServer(server);
+
+// Enable trust proxy for reverse proxies / load balancers (e.g. Nginx, Cloudflare, AWS ALB, Railway Edge)
 app.set('trust proxy', process.env.TRUST_PROXY ? (isNaN(Number(process.env.TRUST_PROXY)) ? process.env.TRUST_PROXY : Number(process.env.TRUST_PROXY)) : 1);
 
 // Global Middlewares
@@ -77,18 +83,19 @@ async function startServer() {
 
   const hostDomain = process.env.APP_URL || `http://localhost:${PORT}`;
 
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`
 ===============================================================
 🚀 DLM Distributed Logistics Engine Running on Port ${PORT}
 📦 Public Routes:    ${hostDomain}/api/v1/public
 🔒 Protected Routes: ${hostDomain}/api/v1/protected
+⚡ WSS WebSocket:     Enabled & Listening on Port ${PORT}
 ===============================================================
     `);
   });
 }
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'ci') {
   startServer();
 }
 

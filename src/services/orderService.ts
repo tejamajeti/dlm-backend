@@ -91,6 +91,7 @@ export async function createOrder(data: {
     trackingNumber: createdOrder.tracking_number,
     totalAmount: createdOrder.total_amount,
     currency: createdOrder.currency,
+    order: createdOrder,
   });
 
   return { ...createdOrder, packages: [newPkg] };
@@ -126,6 +127,7 @@ export async function updateOrderStatus(orderId: string, status: string, actorId
     trackingNumber: updatedOrder.tracking_number,
     status,
     actorId,
+    order: updatedOrder,
   });
 
   return updatedOrder;

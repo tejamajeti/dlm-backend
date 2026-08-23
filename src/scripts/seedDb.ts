@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { insert, seedInMemoryStore, query, findById } from '../db/crudHelper';
+import { insert, update, seedInMemoryStore, query, findById } from '../db/crudHelper';
 import { checkDbConnection, pool } from '../db/connection';
 import { initializeDatabase } from './initDb';
 
@@ -296,7 +296,12 @@ export async function seedDatabase() {
   if (await checkDbConnection()) {
     try {
       for (const u of users) {
-        if (!(await findById('users', u.id))) await insert('users', u);
+        const existing = await findById('users', u.id);
+        if (existing) {
+          await update('users', u.id, u);
+        } else {
+          await insert('users', u);
+        }
       }
       for (const w of warehouses) {
         if (!(await findById('warehouses', w.id))) await insert('warehouses', w);

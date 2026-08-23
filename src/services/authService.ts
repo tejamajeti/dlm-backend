@@ -140,10 +140,10 @@ export async function refreshAccessToken(refreshToken: string) {
     throw { statusCode: 401, message: 'Invalid or expired refresh token' };
   }
 
-  // 2. Check token in Redis store
-  const cachedSession = await cacheGet(`refresh:${refreshToken}`);
-  if (!cachedSession) {
-    throw { statusCode: 401, message: 'Refresh token has been revoked or expired' };
+  // 2. Check if token was explicitly revoked
+  const isRevoked = await cacheGet(`revoked:${refreshToken}`);
+  if (isRevoked) {
+    throw { statusCode: 401, message: 'Refresh token has been revoked' };
   }
 
   // 3. Load user account
@@ -169,5 +169,6 @@ export async function refreshAccessToken(refreshToken: string) {
 export async function revokeRefreshToken(refreshToken: string): Promise<void> {
   if (refreshToken) {
     await cacheDel(`refresh:${refreshToken}`);
+    await cacheSet(`revoked:${refreshToken}`, true, REFRESH_TOKEN_TTL_SECONDS);
   }
 }

@@ -19,17 +19,13 @@ const EMAIL_ALERT_COOLDOWN_MS = 60 * 60 * 1000; // 1 Hour Cooldown
  * Listens to published Kafka / EventBus topics and triggers email dispatches.
  */
 export function initNotificationSubscribers() {
-  console.log('🔔 Initializing Event-Driven Notification Subscribers...');
-
   // ------------------------------------------------------------------------
   // 1. Consumer: USER_CREATED
   // ------------------------------------------------------------------------
   subscribeEvent(KAFKA_TOPICS.USER_CREATED, async (payload) => {
     try {
-      console.log("[Subscribe Event Called]", payload?.data);
       const { email, role, full_name } = payload.data;
       if (email) {
-        console.log(`[Notification Subscriber] Handling user.created for ${email}`);
         await sendWelcomeEmail(email, full_name || 'Valued User', role || 'Customer');
       }
     } catch (err) {
@@ -52,7 +48,6 @@ export function initNotificationSubscribers() {
         }
       }
 
-      console.log(`[Notification Subscriber] Handling order.created for Order #${orderId}`);
       await sendOrderConfirmationEmail(recipientEmail, orderId, trackingNumber || 'DLM-SHIPMENT', Number(totalAmount || 0));
     } catch (err) {
       console.error('[Notification Subscriber Error - ORDER_CREATED]:', err);
@@ -67,7 +62,6 @@ export function initNotificationSubscribers() {
       const { trackingNumber, currentLocation, customerEmail } = payload.data;
       const targetEmail = customerEmail || 'customer@dlm-logistics.com';
 
-      console.log(`[Notification Subscriber] Handling package.shipped for ${trackingNumber}`);
       await sendPackageShippedEmail(targetEmail, trackingNumber, currentLocation || 'Central Sorting Hub');
     } catch (err) {
       console.error('[Notification Subscriber Error - PACKAGE_SHIPPED]:', err);
@@ -82,7 +76,6 @@ export function initNotificationSubscribers() {
       const { trackingNumber, customerEmail } = payload.data;
       const targetEmail = customerEmail || 'customer@dlm-logistics.com';
 
-      console.log(`[Notification Subscriber] Handling package.delivered for ${trackingNumber}`);
       await sendPackageDeliveredEmail(targetEmail, trackingNumber);
     } catch (err) {
       console.error('[Notification Subscriber Error - PACKAGE_DELIVERED]:', err);
@@ -105,7 +98,6 @@ export function initNotificationSubscribers() {
       }
 
       if (targetEmail) {
-        console.log(`[Notification Subscriber] Dispatching custom email to ${targetEmail}`);
         await sendEmail({
           to: targetEmail,
           subject: title || 'DLM Logistics Notification',
@@ -119,7 +111,6 @@ export function initNotificationSubscribers() {
 
   // ------------------------------------------------------------------------
   // 6. Consumer: INVENTORY_UPDATED (Low Stock Warning Alert)
-  // Strict Targeted Routing: Relevant Warehouse Managers ONLY (Admins Excluded) + 1-Hour Cooldown
   // ------------------------------------------------------------------------
   subscribeEvent(KAFKA_TOPICS.INVENTORY_UPDATED, async (payload) => {
     try {
@@ -134,12 +125,8 @@ export function initNotificationSubscribers() {
             const product = (await findById('products', inv.product_id)) || { name: 'Product', sku: 'SKU-UNKNOWN' };
             const warehouse = (await findById('warehouses', inv.warehouse_id)) || { name: inv.warehouse_id, code: inv.warehouse_id };
 
-            console.log(`[Notification Subscriber] ⚠️ Low Stock Alert triggered for ${product.name} (${currentQty}/${threshold} units)`);
-
-            // Fetch assigned manager user
             const managerUser = warehouse.manager_id ? await findById('users', warehouse.manager_id) : null;
 
-            // 1. Create In-App Notification in DB for the Manager (if assigned)
             if (managerUser) {
               await insert('notifications', {
                 id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
@@ -152,15 +139,12 @@ export function initNotificationSubscribers() {
               });
             }
 
-            // 2. Strict Check: Send Email ONLY if assigned user is a Warehouse Manager (ADMINS EXCLUDED)
             if (managerUser && managerUser.role === 'Warehouse Manager' && managerUser.email) {
               const lastSent = lastAlertTimeMap.get(inventoryId) || 0;
               const now = Date.now();
 
               if (now - lastSent > EMAIL_ALERT_COOLDOWN_MS) {
                 lastAlertTimeMap.set(inventoryId, now);
-
-                console.log(`[Notification Subscriber] Dispatching Low Stock Warning Email strictly to Warehouse Manager (${managerUser.email})`);
 
                 await sendLowStockAlertEmail(
                   managerUser.email,
@@ -170,11 +154,7 @@ export function initNotificationSubscribers() {
                   currentQty,
                   threshold
                 );
-              } else {
-                console.log(`[Notification Subscriber] ℹ️ Alert email suppressed for ${inventoryId} (1-hour cooldown active)`);
               }
-            } else {
-              console.log(`[Notification Subscriber] ℹ️ Skipped alert email: No dedicated Warehouse Manager assigned to ${warehouse.name} (Admins excluded)`);
             }
           }
         }
@@ -183,6 +163,4 @@ export function initNotificationSubscribers() {
       console.error('[Notification Subscriber Error - INVENTORY_UPDATED]:', err);
     }
   });
-
-  console.log('✅ Notification Subscribers Registered Successfully');
 }

@@ -77,15 +77,6 @@ export async function sendEmail(options: EmailOptions) {
       html: options.html,
     });
 
-    console.log(`📧 [Email Dispatched] To: ${options.to} | Subject: "${options.subject}"`);
-
-    if (isEtherealAccount) {
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      if (previewUrl) {
-        console.log(`🔗 [Ethereal Email Preview URL]: ${previewUrl}`);
-      }
-    }
-
     return info;
   } catch (error) {
     console.error(`❌ Failed to send email to ${options.to}:`, error);

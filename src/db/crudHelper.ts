@@ -26,6 +26,7 @@ export async function query<T = any>(sql: string, params: any[] = []): Promise<T
     }
   } catch (error) {
     console.error('Postgres query error:', error);
+    throw error;
   }
   return [];
 }

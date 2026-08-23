@@ -5,6 +5,8 @@ import { insert } from '../db/crudHelper';
 import { KafkaEventPayload } from '../types/index';
 import { initNotificationSubscribers } from './subscribers/notificationSubscriber';
 import { KAFKA_TOPICS } from './topics';
+import { initWebSocketSubscribers } from './subscribers/websocketSubscriber';
+import { emitToDashboard } from '../websocket/socketServer';
 
 process.env.KAFKAJS_NO_PARTITIONER_WARNING = '1';
 
@@ -60,9 +62,11 @@ export async function createKafkaTopics() {
 }
 
 export async function initEventBus() {
-  if (process.env.NODE_ENV === 'development') {
+  // In non-production environments (development, test, ci, staging), use local EventBus pipeline
+  if (process.env.NODE_ENV !== 'production') {
     isKafkaConnected = false;
     initNotificationSubscribers();
+    initWebSocketSubscribers();
     return;
   }
 
@@ -79,8 +83,9 @@ export async function initEventBus() {
     isKafkaConnected = false;
   }
 
-  // Register Event-Driven Subscribers (Email, Push, Notifications)
+  // Register Event-Driven Subscribers (Email, Push, Notifications, WebSockets)
   initNotificationSubscribers();
+  initWebSocketSubscribers();
 }
 
 /**
@@ -95,14 +100,18 @@ export async function publishEvent(topic: string, message: Record<string, any>):
   };
 
   // Log to audit table asynchronously
-  insert('audit_logs', {
+  const auditLogObj = {
     id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     actor_id: message.actorId || 'SYSTEM',
     action: topic,
     entity: message.entity || 'EVENT',
     entity_id: message.entityId || payload.eventId,
     details: payload,
-  }).catch((err) => { console.log(`Failed to Audit this Log - EventID: ${payload.eventId} -> ${err.message}`); });
+    created_at: new Date().toISOString(),
+  };
+
+  insert('audit_logs', auditLogObj).catch((err) => { console.log(`Failed to Audit this Log - EventID: ${payload.eventId} -> ${err.message}`); });
+  emitToDashboard('audit:new_log', auditLogObj);
 
   if (isKafkaConnected && producer) {
     try {
@@ -120,7 +129,6 @@ export async function publishEvent(topic: string, message: Record<string, any>):
   }
 
   // Fallback local emission
-  console.log(`📡 [EventBus Broadcast] -> Topic: ${topic}`, payload.eventId);
   localBus.emit(topic, payload);
   return payload;
 }
@@ -132,8 +140,8 @@ export async function subscribeEvent(topic: string, handler: (payload: KafkaEven
   // Always register on local event bus for in-memory / fallback execution
   localBus.on(topic, handler);
 
-  // In development mode, stick to local event bus and do not attempt Kafka connections
-  if (process.env.NODE_ENV === "development") {
+  // In non-production environments (development, test, ci, staging), stick to local event bus
+  if (process.env.NODE_ENV !== 'production') {
     return;
   }
 
