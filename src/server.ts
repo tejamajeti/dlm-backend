@@ -86,7 +86,7 @@ async function startServer() {
   server.listen(PORT, () => {
     console.log(`
 ===============================================================
-🚀 DLM Distributed Logistics Engine Running on Port ${PORT}
+🚀 Synapship Distributed Logistics Engine Running on Port ${PORT}
 📦 Public Routes:    ${hostDomain}/api/v1/public
 🔒 Protected Routes: ${hostDomain}/api/v1/protected
 ⚡ WSS WebSocket:     Enabled & Listening on Port ${PORT}

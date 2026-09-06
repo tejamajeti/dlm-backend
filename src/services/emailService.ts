@@ -67,7 +67,7 @@ export interface EmailOptions {
 export async function sendEmail(options: EmailOptions) {
   try {
     const mailer = await getTransporter();
-    const from = process.env.SMTP_FROM || '"DLM Logistics Engine" <no-reply@dlm-logistics.com>';
+    const from = process.env.SMTP_FROM || '"Synapship Logistics" <no-reply@synapship.com>';
 
     const info = await mailer.sendMail({
       from,
@@ -84,7 +84,7 @@ export async function sendEmail(options: EmailOptions) {
 }
 
 // --------------------------------------------------------------------------
-// HTML EMAIL TEMPLATES FOR DLM LOGISTICS EVENTS
+// HTML EMAIL TEMPLATES FOR SYNAPSHIP LOGISTICS EVENTS
 // --------------------------------------------------------------------------
 
 /**
@@ -96,16 +96,16 @@ export async function sendWelcomeEmail(to: string, name: string, role: string) {
     <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e1e4e8;">
         <div style="background: #1e293b; color: #ffffff; padding: 24px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">📦 Welcome to DLM Logistics</h1>
+          <h1 style="margin: 0; font-size: 24px;">📦 Welcome to Synapship</h1>
         </div>
         <div style="padding: 24px; color: #334155;">
           <h2 style="color: #0f172a;">Hello ${name},</h2>
-          <p>Your account has been successfully created with the role of <strong>${role}</strong>.</p>
+          <p>Your Synapship account has been successfully created with the role of <strong>${role}</strong>.</p>
           <p>You can now log in to manage your shipments, monitor inventory in real-time, and track order fulfillment across all warehouses.</p>
           <div style="margin: 24px 0; text-align: center;">
-            <a href="${frontendUrl}/login" style="background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Access Dashboard</a>
+            <a href="${frontendUrl}/login" style="background: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Access Synapship Dashboard</a>
           </div>
-          <p style="font-size: 12px; color: #64748b;">If you did not sign up for DLM Logistics, please ignore this message.</p>
+          <p style="font-size: 12px; color: #64748b;">If you did not sign up for Synapship, please ignore this message.</p>
         </div>
       </div>
     </div>
@@ -113,7 +113,7 @@ export async function sendWelcomeEmail(to: string, name: string, role: string) {
 
   return sendEmail({
     to,
-    subject: '🎉 Welcome to DLM Logistics Platform',
+    subject: '🎉 Welcome to Synapship Platform',
     html,
   });
 }
@@ -130,7 +130,7 @@ export async function sendOrderConfirmationEmail(to: string, orderId: string, tr
         </div>
         <div style="padding: 24px; color: #334155;">
           <h2 style="color: #0f172a;">Order #${orderId} Confirmed!</h2>
-          <p>Thank you for your order. We are preparing it for shipment from our warehouse network.</p>
+          <p>Thank you for your order with Synapship. We are preparing it for shipment from our warehouse network.</p>
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr style="background: #f8fafc;">
               <td style="padding: 10px; font-weight: bold; border-bottom: 1px solid #e2e8f0;">Tracking Number:</td>
@@ -141,7 +141,7 @@ export async function sendOrderConfirmationEmail(to: string, orderId: string, tr
               <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">$${amount.toFixed(2)}</td>
             </tr>
           </table>
-          <p>Track your shipment status in real-time on our live map pipeline.</p>
+          <p>Track your shipment status in real-time on the Synapship live map pipeline.</p>
         </div>
       </div>
     </div>
@@ -149,7 +149,7 @@ export async function sendOrderConfirmationEmail(to: string, orderId: string, tr
 
   return sendEmail({
     to,
-    subject: `📦 Order Confirmation #${orderId}`,
+    subject: `📦 Order Confirmation #${orderId} - Synapship`,
     html,
   });
 }
@@ -169,7 +169,7 @@ export async function sendPackageShippedEmail(to: string, trackingNumber: string
           <h2 style="color: #0f172a;">Your package is on the way!</h2>
           <p>Package tracking ID <strong>${trackingNumber}</strong> has departed origin warehouse and is currently at <strong>${currentLocation}</strong>.</p>
           <div style="margin: 24px 0; text-align: center;">
-            <a href="${frontendUrl}/tracking?tn=${trackingNumber}" style="background: #0284c7; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Track Package Live</a>
+            <a href="${frontendUrl}/tracking?tn=${trackingNumber}" style="background: #0284c7; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Track Package Live on Synapship</a>
           </div>
         </div>
       </div>
@@ -178,7 +178,7 @@ export async function sendPackageShippedEmail(to: string, trackingNumber: string
 
   return sendEmail({
     to,
-    subject: `🚚 Shipment Dispatched (${trackingNumber})`,
+    subject: `🚚 Shipment Dispatched (${trackingNumber}) - Synapship`,
     html,
   });
 }
@@ -196,7 +196,7 @@ export async function sendPackageDeliveredEmail(to: string, trackingNumber: stri
         <div style="padding: 24px; color: #334155;">
           <h2 style="color: #0f172a;">Shipment Delivered Successfully!</h2>
           <p>Package <strong>${trackingNumber}</strong> has been delivered to its final destination.</p>
-          <p>Thank you for relying on DLM Logistics Engine!</p>
+          <p>Thank you for relying on Synapship Logistics!</p>
         </div>
       </div>
     </div>
@@ -204,7 +204,7 @@ export async function sendPackageDeliveredEmail(to: string, trackingNumber: stri
 
   return sendEmail({
     to,
-    subject: `✅ Package Delivered (${trackingNumber})`,
+    subject: `✅ Package Delivered (${trackingNumber}) - Synapship`,
     html,
   });
 }
@@ -247,7 +247,7 @@ export async function sendLowStockAlertEmail(
 
   return sendEmail({
     to,
-    subject: `⚠️ LOW STOCK ALERT: ${productName} (${currentStock} units left)`,
+    subject: `⚠️ LOW STOCK ALERT: ${productName} (${currentStock} units left) - Synapship`,
     html,
   });
 }

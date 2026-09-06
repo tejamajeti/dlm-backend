@@ -52,14 +52,33 @@ export async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS users (
       id VARCHAR(64) PRIMARY KEY,
       email VARCHAR(255) UNIQUE NOT NULL,
-      password_hash VARCHAR(255) NOT NULL,
+      password_hash VARCHAR(255),
       full_name VARCHAR(255) NOT NULL,
       role VARCHAR(50) NOT NULL CHECK (role IN ('Admin', 'Warehouse Manager', 'Driver', 'Customer', 'Operator')),
       phone VARCHAR(50),
-      avatar VARCHAR(255),
+      avatar TEXT,
+      google_id VARCHAR(255) UNIQUE,
+      auth_provider VARCHAR(50) DEFAULT 'local',
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- Ensure Google OAuth columns exist on existing databases
+    DO $$ 
+    BEGIN 
+      ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+    EXCEPTION 
+      WHEN undefined_column THEN NULL;
+    END $$;
+
+    DO $$ 
+    BEGIN 
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'local';
+      ALTER TABLE users ALTER COLUMN avatar TYPE TEXT;
+    EXCEPTION 
+      WHEN undefined_table THEN NULL;
+    END $$;
 
     -- 2. WAREHOUSES TABLE
     CREATE TABLE IF NOT EXISTS warehouses (

@@ -146,7 +146,7 @@ export async function seedDatabase() {
     {
       id: 'prod_iot_tracker',
       sku: 'SKU-IOT-3001',
-      name: 'DLM Fleet GPS IoT Sensor',
+      name: 'Synapship Fleet GPS IoT Sensor',
       description: 'Real-time temperature and location telemetry beacon',
       category: 'Hardware',
       unit_price: 199.5,

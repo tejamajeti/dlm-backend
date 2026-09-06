@@ -39,7 +39,7 @@ export function initNotificationSubscribers() {
   subscribeEvent(KAFKA_TOPICS.ORDER_CREATED, async (payload) => {
     try {
       const { orderId, trackingNumber, customerId, totalAmount } = payload.data;
-      let recipientEmail = 'customer@dlm-logistics.com';
+      let recipientEmail = 'customer@synapship.com';
 
       if (customerId) {
         const user = await findById('users', customerId);
@@ -48,7 +48,7 @@ export function initNotificationSubscribers() {
         }
       }
 
-      await sendOrderConfirmationEmail(recipientEmail, orderId, trackingNumber || 'DLM-SHIPMENT', Number(totalAmount || 0));
+      await sendOrderConfirmationEmail(recipientEmail, orderId, trackingNumber || 'SYN-SHIPMENT', Number(totalAmount || 0));
     } catch (err) {
       console.error('[Notification Subscriber Error - ORDER_CREATED]:', err);
     }
@@ -60,7 +60,7 @@ export function initNotificationSubscribers() {
   subscribeEvent(KAFKA_TOPICS.PACKAGE_SHIPPED, async (payload) => {
     try {
       const { trackingNumber, currentLocation, customerEmail } = payload.data;
-      const targetEmail = customerEmail || 'customer@dlm-logistics.com';
+      const targetEmail = customerEmail || 'customer@synapship.com';
 
       await sendPackageShippedEmail(targetEmail, trackingNumber, currentLocation || 'Central Sorting Hub');
     } catch (err) {
@@ -74,7 +74,7 @@ export function initNotificationSubscribers() {
   subscribeEvent(KAFKA_TOPICS.PACKAGE_DELIVERED, async (payload) => {
     try {
       const { trackingNumber, customerEmail } = payload.data;
-      const targetEmail = customerEmail || 'customer@dlm-logistics.com';
+      const targetEmail = customerEmail || 'customer@synapship.com';
 
       await sendPackageDeliveredEmail(targetEmail, trackingNumber);
     } catch (err) {
@@ -100,7 +100,7 @@ export function initNotificationSubscribers() {
       if (targetEmail) {
         await sendEmail({
           to: targetEmail,
-          subject: title || 'DLM Logistics Notification',
+          subject: title || 'Synapship Notification',
           html: `<div style="font-family: Arial, sans-serif; padding: 20px;"><h3>${title}</h3><p>${message || ''}</p></div>`,
         });
       }

@@ -1,5 +1,11 @@
 import { Router } from 'express';
-import { loginUser, registerUser, refreshAccessToken, revokeRefreshToken } from '../../services/authService';
+import {
+  loginUser,
+  registerUser,
+  refreshAccessToken,
+  revokeRefreshToken,
+  googleLoginOrRegister,
+} from '../../services/authService';
 import { authRateLimiter } from '../../middleware/rateLimiter';
 
 const router = Router();
@@ -42,11 +48,44 @@ router.post('/register', authRateLimiter, async (req, res, next) => {
 });
 
 /**
+ * @route   POST /api/v1/public/auth/google
+ * @desc    Authenticate or register user via Google OAuth 2.0 Identity Services
+ * @access  Public
+ */
+router.post('/google', authRateLimiter, async (req, res, next) => {
+  try {
+    const { credential, accessToken, token, role, rememberMe } = req.body;
+    if (!credential && !accessToken && !token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation Error',
+        message: 'Google credential or accessToken is required',
+      });
+    }
+    const isRemembered = rememberMe !== undefined ? Boolean(rememberMe) : true;
+    const result = await googleLoginOrRegister({ credential, accessToken, token, role }, isRemembered);
+    
+    if (result.isNewUser) {
+      return res.json({
+        success: true,
+        isNewUser: true,
+        message: 'Role selection required for new Google account',
+        data: result,
+      });
+    }
+
+    res.json({ success: true, message: 'Google authentication successful', data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * @route   POST /api/v1/public/auth/refresh
  * @desc    Issue a new short-lived Access Token using a valid Refresh Token
  * @access  Public
  */
-router.post('/refresh', async (req, res, next) => {
+router.post('/refresh', authRateLimiter, async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {
@@ -64,7 +103,7 @@ router.post('/refresh', async (req, res, next) => {
  * @desc    Revoke user refresh token on logout
  * @access  Public
  */
-router.post('/logout', async (req, res, next) => {
+router.post('/logout', authRateLimiter, async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
     if (refreshToken) {
