@@ -10,8 +10,10 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dlm_super_secret_jwt_key_2026_production_ready';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m'; // Short-lived Access Token (15 min)
-const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'; // Long-lived Refresh Token (7 days)
-const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 3600; // 7 days in seconds
+const REFRESH_TOKEN_EXPIRES_IN_PERSISTENT = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'; // 7 days when rememberMe is true
+const REFRESH_TOKEN_TTL_PERSISTENT = 7 * 24 * 3600; // 7 days in seconds
+const REFRESH_TOKEN_EXPIRES_IN_SESSION = '8h'; // 8 hours (standard enterprise shift) when rememberMe is false
+const REFRESH_TOKEN_TTL_SESSION = 8 * 3600; // 8 hours in seconds
 
 export async function registerUser(data: {
   email: string;
@@ -28,23 +30,20 @@ export async function registerUser(data: {
   const password_hash = await bcrypt.hash(data.password, 10);
   // Prevent public self-registration of elevated privilege roles (Admin / Operator)
   const requestedRole = data.role || 'Customer';
-  const userRole = (requestedRole === 'Admin' || requestedRole === 'Operator') ? 'Customer' : requestedRole;
-  const userId = `usr_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  const role = ['Admin', 'Warehouse Manager', 'Driver'].includes(requestedRole) ? 'Customer' : requestedRole;
 
-  const newUser = {
-    id: userId,
+  const created = await insert('users', {
     email: data.email,
     password_hash,
     full_name: data.full_name,
-    role: userRole,
-    phone: data.phone || '',
+    role,
+    phone: data.phone || null,
     avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80`,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-  };
+  });
 
-  const created = await insert('users', newUser);
-
+  // Publish USER_CREATED event to Kafka
   await publishEvent(KAFKA_TOPICS.USER_CREATED, {
     userId: created.id,
     email: created.email,
@@ -53,14 +52,14 @@ export async function registerUser(data: {
   });
 
   const accessToken = generateJwtToken(created, JWT_EXPIRES_IN);
-  const refreshToken = await generateRefreshToken(created);
+  const refreshToken = await generateRefreshToken(created, true);
 
   const { password_hash: _, ...userWithoutPassword } = created;
 
   return { user: userWithoutPassword, token: accessToken, refreshToken };
 }
 
-export async function loginUser(email: string, password: string) {
+export async function loginUser(email: string, password: string, rememberMe: boolean = true) {
   const users = await findMany('users', { email });
   if (users.length === 0) {
     throw { statusCode: 401, message: 'Invalid credentials' };
@@ -73,11 +72,11 @@ export async function loginUser(email: string, password: string) {
   }
 
   const accessToken = generateJwtToken(user, JWT_EXPIRES_IN);
-  const refreshToken = await generateRefreshToken(user);
+  const refreshToken = await generateRefreshToken(user, rememberMe);
 
   const { password_hash: _, ...userWithoutPassword } = user;
 
-  return { user: userWithoutPassword, token: accessToken, refreshToken };
+  return { user: userWithoutPassword, token: accessToken, refreshToken, rememberMe };
 }
 
 /**
@@ -97,28 +96,33 @@ export function generateJwtToken(user: any, customExpiresIn?: string) {
 }
 
 /**
- * Generate long-lived Refresh Token (7 days) and save state in Redis
+ * Generate Refresh Token (7 days if rememberMe, 8 hours if session-only) and save state in Redis
  */
-export async function generateRefreshToken(user: any): Promise<string> {
+export async function generateRefreshToken(user: any, rememberMe: boolean = true): Promise<string> {
+  const expiresIn = rememberMe ? REFRESH_TOKEN_EXPIRES_IN_PERSISTENT : REFRESH_TOKEN_EXPIRES_IN_SESSION;
+  const ttlSeconds = rememberMe ? REFRESH_TOKEN_TTL_PERSISTENT : REFRESH_TOKEN_TTL_SESSION;
+
   const refreshToken = jwt.sign(
     {
       id: user.id,
       type: 'refresh',
+      rememberMe,
     },
     JWT_SECRET,
-    { expiresIn: REFRESH_TOKEN_EXPIRES_IN as any }
+    { expiresIn: expiresIn as any }
   );
 
-  // Store refresh token session in Redis cache with 7 day TTL
+  // Store refresh token session in Redis cache with configured TTL
   await cacheSet(
     `refresh:${refreshToken}`,
     {
       userId: user.id,
       email: user.email,
       role: user.role,
+      rememberMe,
       created_at: new Date().toISOString(),
     },
-    REFRESH_TOKEN_TTL_SECONDS
+    ttlSeconds
   );
 
   return refreshToken;
@@ -169,6 +173,6 @@ export async function refreshAccessToken(refreshToken: string) {
 export async function revokeRefreshToken(refreshToken: string): Promise<void> {
   if (refreshToken) {
     await cacheDel(`refresh:${refreshToken}`);
-    await cacheSet(`revoked:${refreshToken}`, true, REFRESH_TOKEN_TTL_SECONDS);
+    await cacheSet(`revoked:${refreshToken}`, true, REFRESH_TOKEN_TTL_PERSISTENT);
   }
 }

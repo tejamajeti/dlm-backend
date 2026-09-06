@@ -11,11 +11,12 @@ const router = Router();
  */
 router.post('/login', authRateLimiter, async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
     if (!email || !password) {
       return res.status(400).json({ success: false, error: 'Validation Error', message: 'Email and password are required' });
     }
-    const result = await loginUser(email, password);
+    const isRemembered = rememberMe !== undefined ? Boolean(rememberMe) : true;
+    const result = await loginUser(email, password, isRemembered);
     res.json({ success: true, message: 'Authentication successful', data: result });
   } catch (err) {
     next(err);
