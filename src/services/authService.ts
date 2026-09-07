@@ -17,7 +17,7 @@ const REFRESH_TOKEN_EXPIRES_IN_SESSION = '8h'; // 8 hours (standard enterprise s
 const REFRESH_TOKEN_TTL_SESSION = 8 * 3600; // 8 hours in seconds
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+export const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export async function registerUser(data: {
   email: string;

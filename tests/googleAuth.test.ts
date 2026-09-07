@@ -1,15 +1,12 @@
 import request from 'supertest';
-import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import app from '../src/server';
+import { googleClient } from '../src/services/authService';
 import { seedDatabase } from '../src/scripts/seedDb';
-
-// Ensure GOOGLE_CLIENT_ID is present for tests (including CI where .env is absent)
-process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'mock_test_google_client_id.apps.googleusercontent.com';
 
 describe('Google Authentication API Tests', () => {
   beforeAll(async () => {
-    jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockImplementation(async (options: any) => {
+    jest.spyOn(googleClient, 'verifyIdToken').mockImplementation(async (options: any) => {
       const decoded: any = jwt.decode(options.idToken);
       return {
         getPayload: () => ({
