@@ -1,12 +1,33 @@
 import request from 'supertest';
-import app from '../src/server';
+import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
+import app from '../src/server';
 import { seedDatabase } from '../src/scripts/seedDb';
+
+// Ensure GOOGLE_CLIENT_ID is present for tests (including CI where .env is absent)
+process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'mock_test_google_client_id.apps.googleusercontent.com';
 
 describe('Google Authentication API Tests', () => {
   beforeAll(async () => {
+    jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockImplementation(async (options: any) => {
+      const decoded: any = jwt.decode(options.idToken);
+      return {
+        getPayload: () => ({
+          sub: decoded?.sub || 'google-user-123',
+          email: decoded?.email || 'test@example.com',
+          name: decoded?.name || 'David Driver',
+          picture: decoded?.picture || 'https://example.com/photo.jpg',
+          email_verified: decoded?.email_verified !== undefined ? decoded.email_verified : true,
+        }),
+      } as any;
+    });
+
     await seedDatabase();
   }, 30000);
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
 
   it('POST /api/v1/public/auth/google - should reject request without credential or accessToken', async () => {
     const res = await request(app).post('/api/v1/public/auth/google').send({});
